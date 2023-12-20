@@ -1,0 +1,66 @@
+from Bio import AlignIO
+
+def extract_sequences_from_maf(file_path):
+    alignments = AlignIO.parse(file_path, "maf")
+    sequences = []
+
+    for alignment in alignments:
+        for record in alignment:
+            sequences.append(record.seq)
+
+    return sequences
+
+# Path to your .maf file
+maf_file_path = 'sample.maf'
+
+# Extract sequences and store them in a list
+extracted_sequences = extract_sequences_from_maf(maf_file_path)
+
+# If you need to separate each sequence into its own variable
+# (e.g., seq1, seq2, etc.), you can do the following:
+seq1, seq2, *remaining_seqs = extracted_sequences
+
+print(seq1)
+print(seq2)
+print(seq3)
+
+# Start------- For testing purpose ------Start
+
+seq1 = "ATGCCTGAT-ACTGCAAC-----"
+seq2 = "aTGTCTGATCACTGCAaC-----"
+seq3 = "ATGCCTGATCACTGCAAG-----"
+
+# End------ For testing purpose ------End
+
+# Converting seqs to upper
+seq1 = seq1.upper()
+seq2 = seq2.upper()
+seq3 = seq3.upper()
+
+combindedSeqense = enumerate(zip(seq1, seq2, seq3))
+
+allSequenses = []
+
+def findSequense(combindedSeqenseParam):
+    conserved = ""
+    start = 0
+    for (num, (a, b, c)) in combindedSeqenseParam:
+        print(a,b,c)
+
+        if a == b == c and a != '-':
+            conserved += a
+        else:
+           start = num - len(conserved)
+           if len(conserved) >= 3:
+              allSequenses.append(tuple([(start,num),conserved]))
+           conserved = ""
+
+
+    if len(conserved) >= 3:
+      start = num - len(conserved)
+      allSequenses.append(tuple([(start,num),conserved]))
+
+
+
+findSequense(combindedSeqense)
+print(allSequenses)
