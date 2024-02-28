@@ -11,7 +11,7 @@ Description: This program takes your .maf file and output conserved sequences as
 """
 
 # Define the MAF file location and the species to include
-maf_file ='/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf' 
+maf_file ='path to .maf' 
 include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
 
 # Parse the MAF file
