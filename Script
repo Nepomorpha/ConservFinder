@@ -3,10 +3,9 @@ from Bio import AlignIO
 """
 Program: ConservFinder for .maf files.
 Language: Python 
-Description: 
 Author: Yehor Tertyshnyk 
 Email: egor.tertyshnyk@gmail.com
-Github: --TBS--
+Github: https://github.com/Nepomorpha/ConservFinder-
 Description: This program takes your .maf file and output conserved sequences as well as their genomic range; relative to beginnning of alignment (1) and relative to position on chromosome (2). 
 """
 
