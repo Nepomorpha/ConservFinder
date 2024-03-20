@@ -1,5 +1,4 @@
-# write the shebang line
-
+#!/usr/bin/env python
 """
 TODO:
   - Write a docstring for the whole script here: Use something like the template
