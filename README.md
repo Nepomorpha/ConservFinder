@@ -16,4 +16,8 @@ The ConservFinder is a script designed to identify conserved sequences of certai
 - **Ranges_to_Coordinates** -> Maps ranges of conserved sequences to their genomic coordinates.
 - **Main**
 
+## Usage 
 
+1. Modify `maf file` path and `include species` as per your analysis needs,
+2. Set a threshold for sensetivity of your test.
+3. Run the script directly trough terminal `python conservfinder.py`
