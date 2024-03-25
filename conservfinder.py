@@ -1,47 +1,34 @@
 #!/usr/bin/env python
 """
+
+Program     : ConservFinder for .maf files.
+Language    : Python  
+Author      : Yehor Tertyshnyk, Darrin T. Schultz
+Email       : egor.tertyshnyk@gmail.com
+Github      : https://github.com/Nepomorpha/ConservFinder
+License     : ?--?
+Citation    : -TBS-
+
+Description : This program takes .maf file and output conserved sequences as well as their genomic range; relative to beginnning of alignment (1) and relative to position on chromosome (2). 
+
+Usage
+instructions: see -TBS- 
+
 TODO:
-  - Write a docstring for the whole script here: Use something like the template
+  - Write a docstring for the whole script here: Use something like the template (DONE)
   - Delete the programs that you aren't using
     - If you want to have some code that you are testing or are working on, make a folder in the repo called "dev" and put files in there.
   - Rename this program to something that makes sense, like conservfinder.py, just use lowercase characters
 
-Do something like this - Delete the irrelevant parts and replace with your own info
-
-Program  : odp
-Language : snakemake
-Date     : 2021-01-21
-Author   : Darrin T. Schultz
-Email    : darrin.schultz@univie.ac.at
-Github   : https://github.com/conchoecia/odp
-Support  : For issues or questions, please search if the topic has been discussed already
-           on github and open a new issue if not: https://github.com/conchoecia/odp/issues
-License  : GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. See the LICENSE file.
-Citation : If you use this software for your scientific publication, please cite:
-           Schultz, DT; Haddock, SHD; Bredeson, JV; Green, RE; Simakov, O & Rokhsar, DS
-           Ancient gene linkages support ctenophores as sister to other animals. Nature (2023).
-           https://doi.org/10.1038/s41586-023-05936-6
-
-Description:
-  This program is part of the Oxford Dot Plot (odp) package on github.
-  This script performs mutual-best protein diamond BLAST searches,
-  then makes synteny plots of those results. Performs many other functions.
-  See the documentation for more details.
-
-Usage instructions:
-  - See https://github.com/conchoecia/odp#getting-started
 """
 from collections import Counter
 from Bio import AlignIO
 
 def NtCounter(sequences, threshold):
     """
-    This is a docstring. The point of a docstring is to document what this piece of code does.
-    It is for the person writing the code, for their own reference, and for people who use the code
-    to do something.
-
-    The purpose of this function:
-        The purporse of this function is to find the conserved nucleotides in a multiple sequence alignment.
+ The purpose of this function:
+        The purporse of this function is to find the conserved nucleotides in a multiple sequence alignment. 
+        Conserved nucleotides -> nucleotides that occur in single column of alignment more often than in previously specified threshold. 
 
     The arguments are:
       - sequences: an iterable of strings, each string is a sequence
