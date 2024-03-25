@@ -14,12 +14,6 @@ Description : This program takes .maf file and output conserved sequences as wel
 Usage
 instructions: see -TBS-
 
-TODO:
-  - Write a docstring for the whole script here: Use something like the template (DONE)
-  - Delete the programs that you aren't using
-    - If you want to have some code that you are testing or are working on, make a folder in the repo called "dev" and put files in there.
-  - Rename this program to something that makes sense, like conservfinder.py, just use lowercase characters
-
 """
 from collections import Counter
 from Bio import AlignIO
@@ -48,55 +42,70 @@ def NtCounter(sequences, threshold):
                 break
     return conserved_indices
 
-maf_file = '/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf'
-include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
+def indices_to_ranges(matching_indices):
+    """
+    Converts a list of indices to a list of start and end ranges.
 
-Bp_Threshold = 0.5  # for __%
+    Arguments:
+    - matching_indices: List of indices (int) where nucleotides are conserved.
 
-# Put this into a main function()
-for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-
-    print("\n--------------------------------New Alignment Block--------------------------------")      
-    sequences = []
-    records = []
-    Chrom_Position = []
-
-    for record in multiple_alignment:
-        if record.id in include_species:
-            sequences.append(str(record.seq).upper())
-            records.append(record.id)
-            Chrom_Position.append(record.annotations['start'])
-
-    if not sequences:
-        continue
-
-    matching_indices = NtCounter(sequences, Bp_Threshold)
-    print(matching_indices)
-
+    Returns:
+    - List of tuples representing start and end indices of conserved regions.
+    """
     range_indices = []
-    if matching_indices:
-        # put this into a function called indices_to_ranges()
-        # For each function write a docstring
-        start = end = matching_indices[0]
-        for index in matching_indices[1:] + [None]:
-            if index is not None and index == end + 1:
-                end = index
-            else:
-                if end - start >= 4:
-                    range_indices.append((start, end))
-                if index is not None:
-                    start = end = index
+    start = end = matching_indices[0]
+    for index in matching_indices[1:] + [None]:
+        if index is not None and index == end + 1:
+            end = index
+        else:
+            if end - start >= 4:
+                range_indices.append((start, end))
+            if index is not None:
+                start = end = index
+    return range_indices
 
-        # put this into a function called ranges_to_coordinates()
-        # For each function write a docstring
-        for start, end in range_indices:
-            conserved_sequence = sequences[0][start:end+1]
-            print(f"Conserved sequence: {conserved_sequence} Relative range: {start}-{end}")
-            for i, record_id in enumerate(records):
-                genomic_start = Chrom_Position[i] + start + 1
-                genomic_end = Chrom_Position[i] + end + 1
-                print(f"{record_id} {genomic_start} {genomic_end}")
-            print()
+def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position):
+    """
+    Converts ranges of conserved sequences into genomic coordinates and prints them.
 
-# put the piece of code down here that calls the main function
-# if __name__ == '__main__': ... et cetera
+    Arguments:
+    - range_indices: List of tuples (start, end) of conserved regions.
+    - sequences: List of sequences (str) analyzed.
+    - records: List of record IDs (str) corresponding to sequences.
+    - Chrom_Position: List of chromosome start positions (int) for each sequence.
+    """
+    for start, end in range_indices:
+        conserved_sequence = sequences[0][start:end+1]
+        print(f"Conserved sequence: {conserved_sequence} Relative range: {start}-{end}")
+        for i, record_id in enumerate(records):
+            genomic_start = Chrom_Position[i] + start + 1
+            genomic_end = Chrom_Position[i] + end + 1
+            print(f"{record_id} {genomic_start} {genomic_end}")
+        print()
+
+def main():
+    maf_file = '/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf'
+    include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
+    Bp_Threshold = 0.6
+
+    for multiple_alignment in AlignIO.parse(maf_file, "maf"):
+        print("\n--------------------------------New Alignment Block--------------------------------")      
+        sequences = []
+        records = []
+        Chrom_Position = []
+
+        for record in multiple_alignment:
+            if record.id in include_species:
+                sequences.append(str(record.seq).upper())
+                records.append(record.id)
+                Chrom_Position.append(record.annotations['start'])
+
+        if not sequences:
+            continue
+
+        matching_indices = NtCounter(sequences, Bp_Threshold)
+        range_indices = indices_to_ranges(matching_indices)
+        ranges_to_coordinates(range_indices, sequences, records, Chrom_Position)
+
+if __name__ == '__main__':
+    main()
