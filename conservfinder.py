@@ -2,7 +2,7 @@
 """
 
 Program     : ConservFinder for .maf files.
-Language    : Python  
+Language    : Python
 Author      : Yehor Tertyshnyk, Darrin T. Schultz
 Email       : egor.tertyshnyk@gmail.com
 Github      : https://github.com/Nepomorpha/ConservFinder
@@ -12,7 +12,7 @@ Citation    : -TBS-
 Description : This program takes .maf file and output conserved sequences as well as their genomic range; relative to beginnning of alignment (1) and relative to position on chromosome (2). 
 
 Usage
-instructions: see -TBS- 
+instructions: see -TBS-
 
 TODO:
   - Write a docstring for the whole script here: Use something like the template (DONE)
@@ -50,65 +50,53 @@ def NtCounter(sequences, threshold):
 
 maf_file = '/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf'
 include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
-# delete trailing spaces
-Bp_Threshold = 0.5  # for __% 
+
+Bp_Threshold = 0.5  # for __%
 
 # Put this into a main function()
 for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-    # delete trailing spaces
+
     print("\n--------------------------------New Alignment Block--------------------------------")      
     sequences = []
     records = []
-    # delete trailing spaces
-    Chrom_Position = [] 
-    
+    Chrom_Position = []
+
     for record in multiple_alignment:
         if record.id in include_species:
             sequences.append(str(record.seq).upper())
-            # delete trailing spaces
-            records.append(record.id)  
+            records.append(record.id)
             Chrom_Position.append(record.annotations['start'])
 
     if not sequences:
         continue
 
-    # delete whitespaces
-   
     matching_indices = NtCounter(sequences, Bp_Threshold)
     print(matching_indices)
 
-    # delete whitespaces
-   
     range_indices = []
-    # delete trailng spaces
-    if matching_indices:  
+    if matching_indices:
         # put this into a function called indices_to_ranges()
         # For each function write a docstring
         start = end = matching_indices[0]
-        # delete trailing spaces
-        for index in matching_indices[1:] + [None]: 
+        for index in matching_indices[1:] + [None]:
             if index is not None and index == end + 1:
                 end = index
             else:
-                # delete trailing spaces
-                if end - start >= 4: 
+                if end - start >= 4:
                     range_indices.append((start, end))
                 if index is not None:
                     start = end = index
 
         # put this into a function called ranges_to_coordinates()
         # For each function write a docstring
-        # delete trailing spaces
-        for start, end in range_indices:  
+        for start, end in range_indices:
             conserved_sequence = sequences[0][start:end+1]
             print(f"Conserved sequence: {conserved_sequence} Relative range: {start}-{end}")
             for i, record_id in enumerate(records):
-                # delete trailing spaces
-                genomic_start = Chrom_Position[i] + start + 1 
+                genomic_start = Chrom_Position[i] + start + 1
                 genomic_end = Chrom_Position[i] + end + 1
                 print(f"{record_id} {genomic_start} {genomic_end}")
-            # delete trailing spaces
-            print()  
+            print()
 
 # put the piece of code down here that calls the main function
 # if __name__ == '__main__': ... et cetera
