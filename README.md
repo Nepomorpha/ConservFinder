@@ -1,5 +1,5 @@
 # ConservFinder 
-The ConservFinder is a script designed to identify conserved sequences of certain leenght that are near same (occuance is above certain threshold) within alighment block of MAF file. The aim of this script 
+The ConservFinder is a script designed to identify conserved sequences of certain leenght that are near same (occuance is above certain threshold) within alighment block of MAF file. The aim of this script is to assist in studies of genomic conservation across different species.
 
 ## Features
 **Input**: MAF file, names of species of interest, threshold.  
