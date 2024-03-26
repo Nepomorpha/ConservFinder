@@ -13,7 +13,7 @@ The ConservFinder is a script designed to identify conserved sequences of certai
 
 - **NtCounter** -> Calculates conserved nucleotides based on a threshold.
 - **Indices_to_Ranges** -> Converts matching indices to conserved sequence ranges.
-- **Ranges_to_Coordinates** -> Maps ranges of conserved sequences to their genomic coordinates.
+- **Ranges_to_Coordinates** -> Maps ranges of conserved sequences to their genomic coordinates. Write them in .bed file. 
 - **Main**
 
 ## Usage 
