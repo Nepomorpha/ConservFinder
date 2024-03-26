@@ -17,6 +17,9 @@ instructions: see -TBS-
 """
 from collections import Counter
 from Bio import AlignIO
+import pybedtools
+
+bed_intervals = [] # we need that for bed
 
 def NtCounter(sequences, threshold):
     """
@@ -64,7 +67,7 @@ def indices_to_ranges(matching_indices):
                 start = end = index
     return range_indices
 
-def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position):
+def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter):
     """
     Converts ranges of conserved sequences into genomic coordinates and prints them.
 
@@ -73,6 +76,7 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position):
     - sequences: List of sequences (str) analyzed.
     - records: List of record IDs (str) corresponding to sequences.
     - Chrom_Position: List of chromosome start positions (int) for each sequence.
+    - ali_block_counter: counter (int) of .maf alighments.
     """
     for start, end in range_indices:
         conserved_sequence = sequences[0][start:end+1]
@@ -81,15 +85,17 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position):
             genomic_start = Chrom_Position[i] + start + 1
             genomic_end = Chrom_Position[i] + end + 1
             print(f"{record_id} {genomic_start} {genomic_end}")
+            bed_intervals.append([record_id, genomic_start, genomic_end, "0", ".", f"block_{ali_block_counter}"])
         print()
 
 def main():
     maf_file = '/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf'
     include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
     Bp_Threshold = 0.6
+    ali_block_counter = 1 # that is needed to track which maf ali is shown in bed
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-        print("\n--------------------------------New Alignment Block--------------------------------")      
+        print("\n--------------------------------New Alignment Block--------------------------------")
         sequences = []
         records = []
         Chrom_Position = []
@@ -105,7 +111,13 @@ def main():
 
         matching_indices = NtCounter(sequences, Bp_Threshold)
         range_indices = indices_to_ranges(matching_indices)
-        ranges_to_coordinates(range_indices, sequences, records, Chrom_Position)
+        ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter)
+        ali_block_counter += 1
+    if bed_intervals:
+        bedtool = pybedtools.BedTool(bed_intervals)
+        bedtool.saveas('example.bed')
+    else:
+        print("No intervals to save.")
 
 if __name__ == '__main__':
     main()
