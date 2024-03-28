@@ -9,7 +9,7 @@ Github      : https://github.com/Nepomorpha/ConservFinder
 License     : ?--?
 Citation    : -TBS-
 
-Description : This program takes .maf file and output conserved sequences as well as their genomic range; relative to beginnning of alignment (1) and relative to position on chromosome (2). 
+Description : This program takes .maf file and output conserved sequences as well as their genomic range in .bed format.
 
 Usage
 instructions: see -TBS-
@@ -25,15 +25,15 @@ bed_intervals = [] # we need that for bed
 
 def get_args():
     """
-The purpose of this function is accepting parameter such as path to the file, threshold or included species as command-line arguments. 
+The purpose of this function is accepting parameter such as path to the file, threshold or included species as command-line arguments.
 
 Template for input is:
 
-python conservfinder.py -f "path_to_maf_file.maf" -t 0.7 -s "species1" "species2" "species3"
+python conservfinder.py -f "path_to_maf_file.maf" -t 0.7 -s "species1" "species2" "species3" -o "name_of_example_file.bed"
 
 As for example:
 
-python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf" -t 0.6 -s "Octopusvulgaris6645.OX597823.1" "Octopusbimaculoides37653.NC_068990.1" "Octopussinensis2607531.NC_043005.1"
+python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf" -t 0.6 -s "Octopusvulgaris6645.OX597823.1" "Octopusbimaculoides37653.NC_068990.1" "Octopussinensis2607531.NC_043005.1" -o "example.bed"
 
     """
     parser = argparse.ArgumentParser(description="Process MAF files to find conserved regions.")
@@ -99,16 +99,17 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali
     - records: List of record IDs (str) corresponding to sequences.
     - Chrom_Position: List of chromosome start positions (int) for each sequence.
     - ali_block_counter: counter (int) of .maf alighments.
+    Note: for .bed format score of sequence is 0 by defauld and strand is unidentified (.).
     """
     for start, end in range_indices:
         conserved_sequence = sequences[0][start:end+1]
-        print(f"Conserved sequence: {conserved_sequence} Relative range: {start}-{end}")
+        #print(f"Conserved sequence: {conserved_sequence} Relative range: {start}-{end}")
         for i, record_id in enumerate(records):
             genomic_start = Chrom_Position[i] + start + 1
             genomic_end = Chrom_Position[i] + end + 1
-            print(f"{record_id} {genomic_start} {genomic_end}")
+            #print(f"{record_id} {genomic_start} {genomic_end}")
             bed_intervals.append([record_id, genomic_start, genomic_end, f"block_{ali_block_counter}", "0", "."])
-        print()
+        #print()
 
 def main():
     args = get_args()
@@ -117,9 +118,10 @@ def main():
     include_species = args.species
     output_filename = args.output
     ali_block_counter = 1 # that is needed to track which maf ali is shown in bed
+    total_conserved_regions = 0 # that is for counting conserve sequences.
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-        print("\n--------------------------------New Alignment Block--------------------------------")
+        #print("\n--------------------------------New Alignment Block--------------------------------")
         sequences = []
         records = []
         Chrom_Position = []
@@ -135,11 +137,19 @@ def main():
 
         matching_indices = NtCounter(sequences, Bp_Threshold)
         range_indices = indices_to_ranges(matching_indices)
+        total_conserved_regions += len(range_indices)
         ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter)
         ali_block_counter += 1
     if bed_intervals:
         bedtool = pybedtools.BedTool(bed_intervals)
         bedtool.saveas(output_filename)
+        print("\n" + "+------------------------------------------------------------+")
+        print("|                 | ConservFinder Summary |                  |")
+        print("|------------------------------------------------------------|")
+        print(f"| - Total alignment blocks processed: {ali_block_counter}")
+        print(f"| - Total conserved regions found: {total_conserved_regions}")
+        print(f"| - Results have been saved to: {output_filename}")
+        print("+------------------------------------------------------------+" + "\n")
     else:
         print("No intervals to save.")
 
