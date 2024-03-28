@@ -40,6 +40,7 @@ python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserve
     parser.add_argument('-f', '--file', required=True, help="Path to the MAF file")
     parser.add_argument('-t', '--threshold', type=float, default=0.6, help="Threshold for freq. of conserved nts")
     parser.add_argument('-s', '--species', nargs='+', help="List of species to include")
+    parser.add_argument('-o', '--output', default='output.bed', help="Output filename for the BED file")
     return parser.parse_args()
 
 def NtCounter(sequences, threshold):
@@ -114,6 +115,7 @@ def main():
     maf_file = args.file
     Bp_Threshold = args.threshold
     include_species = args.species
+    output_filename = args.output
     ali_block_counter = 1 # that is needed to track which maf ali is shown in bed
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
@@ -137,7 +139,7 @@ def main():
         ali_block_counter += 1
     if bed_intervals:
         bedtool = pybedtools.BedTool(bed_intervals)
-        bedtool.saveas('example.bed')
+        bedtool.saveas(output_filename)
     else:
         print("No intervals to save.")
 
