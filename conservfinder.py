@@ -85,7 +85,7 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali
             genomic_start = Chrom_Position[i] + start + 1
             genomic_end = Chrom_Position[i] + end + 1
             print(f"{record_id} {genomic_start} {genomic_end}")
-            bed_intervals.append([record_id, genomic_start, genomic_end, "0", ".", f"block_{ali_block_counter}"])
+            bed_intervals.append([record_id, genomic_start, genomic_end, f"block_{ali_block_counter}", "0", "."])
         print()
 
 def main():
