@@ -21,9 +21,10 @@ The ConservFinder is a script designed to identify conserved sequences of certai
 Run the script with the following commands:
 - **path** to your MAF file (-f),
 - **threshold** for conserved nucleotides (-t). The default is 0.6.
-- a list of **species/record.id** as in your .maf file (-s).
+- a list of **species/record.id** as in your .maf file (-s),
+- a **path** to output file in .bed format. 
 
 Example:
 ```python
-python conservfinder.py -f "path/to/maf_file.maf" -t 0.7 -s "Species1" "Species2" "Species2"
+python conservfinder.py -f "path/to/maf_file.maf" -t 0.7 -s "Species1" "Species2" "Species2" -o "conserved_regions.bed"
 ```
