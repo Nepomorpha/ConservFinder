@@ -78,6 +78,9 @@ def indices_to_ranges(matching_indices):
     - List of tuples representing start and end indices of conserved regions.
     """
     range_indices = []
+    if not matching_indices:  # Check if the list is empty
+        return range_indices  # Return an empty list if there are no matching indices
+
     start = end = matching_indices[0]
     for index in matching_indices[1:] + [None]:
         if index is not None and index == end + 1:
