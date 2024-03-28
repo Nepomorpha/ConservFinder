@@ -18,8 +18,29 @@ instructions: see -TBS-
 from collections import Counter
 from Bio import AlignIO
 import pybedtools
+import argparse
 
 bed_intervals = [] # we need that for bed
+
+
+def get_args():
+    """
+The purpose of this function is accepting parameter such as path to the file, threshold or included species as command-line arguments. 
+
+Template for input is:
+
+python conservfinder.py -f "path_to_maf_file.maf" -t 0.7 -s "species1" "species2" "species3"
+
+As for example:
+
+python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf" -t 0.6 -s "Octopusvulgaris6645.OX597823.1" "Octopusbimaculoides37653.NC_068990.1" "Octopussinensis2607531.NC_043005.1"
+
+    """
+    parser = argparse.ArgumentParser(description="Process MAF files to find conserved regions.")
+    parser.add_argument('-f', '--file', required=True, help="Path to the MAF file")
+    parser.add_argument('-t', '--threshold', type=float, default=0.6, help="Threshold for freq. of conserved nts")
+    parser.add_argument('-s', '--species', nargs='+', help="List of species to include")
+    return parser.parse_args()
 
 def NtCounter(sequences, threshold):
     """
@@ -89,9 +110,10 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali
         print()
 
 def main():
-    maf_file = '/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf'
-    include_species = ["Octopusvulgaris6645.OX597823.1", "Octopusbimaculoides37653.NC_068990.1", "Octopussinensis2607531.NC_043005.1"]
-    Bp_Threshold = 0.6
+    args = get_args()
+    maf_file = args.file
+    Bp_Threshold = args.threshold
+    include_species = args.species
     ali_block_counter = 1 # that is needed to track which maf ali is shown in bed
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
