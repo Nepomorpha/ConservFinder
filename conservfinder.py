@@ -19,6 +19,7 @@ from collections import Counter
 from Bio import AlignIO
 import pybedtools
 import argparse
+import pandas as pd 
 
 bed_intervals = [] # we need that for bed
 
@@ -114,47 +115,110 @@ def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali
             bed_intervals.append([record_id, genomic_start, genomic_end, f"block_{ali_block_counter}", "0", "."])
         #print()
 
-def main():
-    args = get_args()
-    maf_file = args.file
-    Bp_Threshold = args.threshold
-    include_species = args.species
-    output_filename = args.output
-    ali_block_counter = 1 # that is needed to track which maf ali is shown in bed
-    total_conserved_regions = 0 # that is for counting conserve sequences.
+def process_alignments(maf_file, species_list, threshold, output_bed):
+    """
+    Process the MAF file to find conserved regions and save them to a BED and rbh2 file.
+    Input:
+        - maf_file: Path to the MAF file.
+        - species_list: List of species to include in the analysis.
+        - threshold: Threshold for the frequency of conserved nucleotides.
+        - output_bed: Output filename for the BED file.
+    Output:
+        - BED file.
+        - rbh2 file.
+    Note name of rhb2 file is the same as name of bed file but with .rbh2 extension.
+    Packages used:
+        - Bio.AlignIO
+        - pybedtools
+        - pandas
+    """
+
+    bed_intervals = []
+    rbh2_entries = []
+    ali_block_counter = 1
+    total_conserved_regions = 0
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-        #print("\n--------------------------------New Alignment Block--------------------------------")
-        sequences = []
-        records = []
-        Chrom_Position = []
+        sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
 
         for record in multiple_alignment:
-            if record.id in include_species:
-                sequences.append(str(record.seq).upper())
-                records.append(record.id)
-                Chrom_Position.append(record.annotations['start'])
+            for species in species_list:
+                if species in record.id:
+                    sequences.append(str(record.seq).upper())
+                    records.append(record.id)
+                    chrom_positions.append(record.annotations['start'])
+
+                    first_period_idx = record.id.find('.')
+                    if first_period_idx != -1:
+                        chrom_part = record.id[first_period_idx + 1:]  # Extract the scaffold part
+                    else:
+                        chrom_part = "unknown"  #  if no period is found
+                    chroms.append(chrom_part)
+
+                    strand = record.annotations['strand']
+                    if strand == -1:
+                        strand = '-'
+                    elif strand == 1:
+                        strand = '+'
+                    strands.append(strand)
 
         if not sequences:
             continue
 
-        matching_indices = NtCounter(sequences, Bp_Threshold)
+        matching_indices = NtCounter(sequences, threshold)
         range_indices = indices_to_ranges(matching_indices)
-        total_conserved_regions += len(range_indices)
-        ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter)
-        ali_block_counter += 1
+
+        for start_index, end_index in range_indices:
+            rbh2_entry = {}
+
+            for i, record_id in enumerate(records):
+                genomic_start = chrom_positions[i] + start_index
+                genomic_end = chrom_positions[i] + end_index
+                bed_intervals.append([chroms[i], genomic_start, genomic_end, str(ali_block_counter), strands[i], f"block_{ali_block_counter}"])
+
+                # Directly assign values for each species
+                rbh2_entry[f"{record_id}_gene"] = f"block_{ali_block_counter}"
+                rbh2_entry[f"{record_id}_color"] = f"{i % 256}{i % 256}{i % 256}" # This part is not working properly
+                rbh2_entry[f"{record_id}_scaf"] = chroms[i]
+                rbh2_entry[f"{record_id}_start"] = genomic_start
+                rbh2_entry[f"{record_id}_stop"] = genomic_end
+                rbh2_entry[f"{record_id}_strand"] = strands[i]
+
+            rbh2_entries.append(rbh2_entry)
+            ali_block_counter += 1
+            total_conserved_regions += len(range_indices)
+
+    # Save the BED and rbh2 files
+    bed_output = output_bed if output_bed.endswith('.bed') else f"{output_bed}.bed"
+    rbh2_output = bed_output.replace('.bed', '.rbh2')
+
+    bedtool = pybedtools.BedTool(bed_intervals)
+    bedtool.saveas(bed_output)
+
+    df = pd.DataFrame(rbh2_entries)
+    df.to_csv(rbh2_output, sep="\t", index=False)
+
     if bed_intervals:
         bedtool = pybedtools.BedTool(bed_intervals)
-        bedtool.saveas(output_filename)
+        bedtool.saveas(output_bed)
         print("\n" + "+------------------------------------------------------------+")
         print("|                 | ConservFinder Summary |                  |")
         print("|------------------------------------------------------------|")
         print(f"| - Total alignment blocks processed: {ali_block_counter}")
         print(f"| - Total conserved regions found: {total_conserved_regions}")
-        print(f"| - Results have been saved to: {output_filename}")
+        print(f"| - Results have been saved to: {output_bed}")
         print("+------------------------------------------------------------+" + "\n")
     else:
         print("No intervals to save.")
+
+if __name__ == '__main__':
+    args = get_args()
+    maf_file = args.file
+    Bp_Threshold = args.threshold
+    include_species = args.species
+    output_filename = args.output
+
+    process_alignments(maf_file, include_species, Bp_Threshold, output_filename)
 
 if __name__ == '__main__':
     main()
