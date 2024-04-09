@@ -3,7 +3,7 @@ The ConservFinder is a script designed to identify conserved sequences of a cert
 
 ## Features
 **Input**: MAF file, names of species of interest, threshold.
-**Output**: (1) Number of alignment blocks and number of conserved sequences (2) .bed file with genomic ranges.
+**Output**: (1) Number of alignment blocks and number of conserved sequences (2) .bed file with genomic ranges. (3) .rbh2 file.  
 
 **Used packages**:
 - collections.Counter: For counting nucleotide occurrences.
