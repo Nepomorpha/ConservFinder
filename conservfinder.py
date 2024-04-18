@@ -19,6 +19,7 @@ from collections import Counter
 from Bio import AlignIO
 import argparse
 import pandas as pd
+import random
 
 bed_intervals = [] # we need that for bed
 
@@ -160,10 +161,11 @@ def process_alignments(maf_file, species_list, threshold, output_bed):
         range_indices = indices_to_ranges(matching_indices)
 
         for start_index, end_index in range_indices:
+            r = lambda: random.randint(0,255) # This is here for random color generation
             rbh2_entry = {}
-            rbh2_entry[f"Block"] = f"block_{ali_block_counter}"
-            rbh2_entry[f"Gene_group"] = "not_assigned_yet"
-            rbh2_entry[f"Color"] = "#000000"
+            rbh2_entry[f"rbh"] = f"block_{ali_block_counter}"
+            rbh2_entry[f"gene_group"] = "not_assigned_yet"
+            rbh2_entry[f"color"] = '#%02X%02X%02X' % (r(),r(),r())
             for i, record_id in enumerate(records):
                 genomic_start = chrom_positions[i] + start_index
                 genomic_end   = chrom_positions[i] + end_index
@@ -171,7 +173,6 @@ def process_alignments(maf_file, species_list, threshold, output_bed):
                 rbh2_entry[f"{record_id}_strand"] = strands[i]
                 rbh2_entry[f"{record_id}_start"]  = genomic_start # make sure this is in bed format, note here whether it is or not
                 rbh2_entry[f"{record_id}_stop"]   = genomic_end   # make sure this is in bed format, note here whether it is or not
-            rbh2_entry[f"Colour"] = "#000000"
             rbh2_entries.append(rbh2_entry)
             ali_block_counter += 1
             total_conserved_regions += len(range_indices)
