@@ -26,32 +26,53 @@ bed_intervals = [] # we need that for bed
 
 def get_args():
     """
-The purpose of this function is accepting parameter such as path to the file, threshold or included species as command-line arguments.
+    The purpose of this function is accepting parameter such as path to the file, threshold or included species as command-line arguments.
 
-Template for input is:
+    Template for input is:
 
-python conservfinder.py -f "path_to_maf_file.maf" -t 0.7 -s "species1" "species2" "species3" -o "name_of_example_file.rbh2"
+    python conservfinder.py -f "path_to_maf_file.maf" -t 0.7 -s "species1" "species2" "species3" -o "name_of_example_file.rbh2"
 
-As for example:
+    Example usage:
 
-python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf" -t 0.6 -s "Octopusvulgaris6645.OX597823.1" "Octopusbimaculoides37653.NC_068990.1" "Octopussinensis2607531.NC_043005.1" -o "example.rbh2"
+    python conservfinder.py -f "/Users/egortertyshnyk/Desktop/Simakov_Group/Conserved_regions/MOLLUSC_Chr10_small.maf" -t 0.6 -s "Octopusvulgaris6645.OX597823.1" "Octopusbimaculoides37653.NC_068990.1" "Octopussinensis2607531.NC_043005.1" -o "example.rbh2"
 
     """
     parser = argparse.ArgumentParser(description="Process MAF files to find conserved regions.")
-    parser.add_argument('-f', '--file', required=True, help="Path to the MAF file")
-    parser.add_argument('-t', '--threshold', type=float, default=0.6, help="Threshold for freq. of conserved nts")
-    parser.add_argument('-s', '--species', nargs='+', help="List of species to include")
-    parser.add_argument('-o', '--output', default='output.bed', help="Output filename for the BED file")
-    return parser.parse_args()
+    parser.add_argument('-f', '--file',      required=True,               help="Path to the MAF file")
+    parser.add_argument('-t', '--threshold', type=float, default=0.6,     help="Threshold for freq. of conserved nts")
+    parser.add_argument('-s', '--species',   nargs='+',                   help="List of species to include")
+    parser.add_argument('-o', '--output',    default='output.bed',        help="Output filename for the BED file")
+    parser.add_argument('-a', '--aligner',   type=str, default="cactus",  help="Tells the program which aligner was used to generate the MAF file. Default is 'cactus'. No other options are currently supported")
+    args = parser.parse_args()
+    # Check if the aligner is supported
+    if args.aligner not in ["cactus"]:
+        raise ValueError(f"Aligner '{args.aligner}' is not supported. Only 'cactus' is supported.")
+    return args
 
 def NtCounter(sequences, threshold):
     """
- The purpose of this function:
-        The purporse of this function is to find the conserved nucleotides in a multiple sequence alignment.
-        Conserved nucleotides -> nucleotides that occur in single column of alignment more often than in previously specified threshold. 
+    The purpose of this function:
+        The purpose of this function is to find the conserved nucleotides in a multiple sequence alignment.
+        Conserved nucleotides -> nucleotides that occur in single column of alignment more often than in previously specified threshold.
+    Example:
+          ix:              1111111111222222
+                 01234567890123456789012345
+         %id:    11111    111      11111111
+                 000006666000      00000000
+                 00000666600000000000000000
+        >70%:    *****    ***      ********
+        Seq1:    ATGCTGAGTCGT------GTATCGAT
+        Seq2:    ATGCTCCCCCGTAAAAAAGTATCGAT
+        Seq3:    ATGCTGAGTCGT------GTATCGAT
+
+    Example output:
+       The conserved indices in the above example are:
+          [0, 1, 2, 3, 4, 9, 10, 11, 18, 19, 20, 21, 22, 23, 24, 25]
+        Therefore, the list of integers like above is returned.
 
     The arguments are:
-      - sequences: an iterable of strings, each string is a sequence
+      - sequences: an iterable of strings, each string is a sequence. The permissible characters are "ACGNT-".
+        - example: ['ATGCATGA', 'ACCCATGA', 'ATGCACGA']
       - threshold: a float, the minimum fraction of a nucleotide to be considered conserved. The value should be between 0 and 1.
 
     The output is:
@@ -68,15 +89,24 @@ def NtCounter(sequences, threshold):
                 break
     return conserved_indices
 
-def indices_to_ranges(matching_indices):
+def indices_to_ranges(matching_indices, min_match_len = 5):
     """
     Converts a list of indices to a list of start and end ranges.
 
+    Example:
+        In the example from the function NtCounter, the list of matching indices is:
+            [0, 1, 2, 3, 4, 9, 10, 11, 18, 19, 20, 21, 22, 23, 24, 25]
+        The ranges of conserved nucleotides are:
+            [(0, 4), (9, 11), (18, 25)]
+
     Arguments:
-    - matching_indices: List of indices (int) where nucleotides are conserved.
+      - matching_indices: List of indices (int) where nucleotides are conserved.
+      - min_match_len: Minimum length of a conserved region to be considered.
+                       A value of 5 means that a conserved region must be at least 5 nucleotides long.
 
     Returns:
-    - List of tuples representing start and end indices of conserved regions.
+      - List of tuples representing start and end indices of conserved regions.
+        Because these are indices for the sequence positions, we must change them later for bed format.
     """
     range_indices = []
     if not matching_indices:  # Check if the list is empty
@@ -87,40 +117,57 @@ def indices_to_ranges(matching_indices):
         if index is not None and index == end + 1:
             end = index
         else:
-            if end - start >= 4:
+            if end - start >= (min_match_len - 1): # For example, start = 1, end = 5, is a match of length 5
                 range_indices.append((start, end))
             if index is not None:
                 start = end = index
     return range_indices
 
-def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter):
+#def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter):
+# delete sequences, as this isn't used anymore in the function
+# why isn't this function used in the program? I can't find it elsewhere in the code
+def ranges_to_coordinates(range_indices, records, Chrom_Position, ali_block_counter):
     """
     Converts ranges of conserved sequences into genomic coordinates and prints them.
+    Each alignment comes from a unique scaffold and position from the source genomes.
+    Therefore, we must convert the indices of the alignment to genomic coordinates.
 
     Arguments:
-    - range_indices: List of tuples (start, end) of conserved regions.
-    - sequences: List of sequences (str) analyzed.
-    - records: List of record IDs (str) corresponding to sequences.
-    - Chrom_Position: List of chromosome start positions (int) for each sequence.
-    - ali_block_counter: counter (int) of .maf alighments.
-    Note: for .bed format score of sequence is 0 by defauld and strand is unidentified (.).
+      -     range_indices: List of tuples (start, end) of conserved regions in the alignment.
+                              Coordinates are indices of the alignment.
+                              These range indices are yielded from the function indices_to_ranges.
+      # you can remove this from the function arguments, as you don't use it anymore 
+      #-         sequences: List of sequences (str) analyzed.
+      #                        These are parsed from the .maf file.
+      -           records: List of record IDs (str) corresponding to sequences.
+                             In other words, these are the fasta headers to which this sequence belongs.
+                             These are parsed from the .maf file.
+      -    Chrom_Position: List of chromosome start positions (int) for each sequence.
+                             These are parsed from the .maf file.
+      - ali_block_counter: The counter (int) of .maf alignments from the input file.
+                             This is used to give a unique identifier to each conserved region.
+
+    Notes:
+      - For .bed format score of sequence is 0 by defauld and strand is unidentified (.).
     """
     for start, end in range_indices:
-        conserved_sequence = sequences[0][start:end+1]
+        # you can delete this line below - you don't use this sequence anymore in this function.
+        #conserved_sequence = sequences[0][start:end+1]
         for i, record_id in enumerate(records):
             genomic_start = Chrom_Position[i] + start + 1
             genomic_end = Chrom_Position[i] + end + 1
             bed_intervals.append([record_id, genomic_start, genomic_end, f"block_{ali_block_counter}", "0", "."])
 
-def process_alignments(maf_file, species_list, threshold, output_bed):
+def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     """
     Process the MAF file to find conserved regions and save them to an RBH2 file.
 
     Arguments:
-    - maf_file: Path to the MAF file.
+    - maf_file:     Path to the MAF file.
     - species_list: List of species to include in the analysis.
-    - threshold: Threshold for the frequency of conserved nucleotides.
-    - output_rbh2: Output filename for the RBH2 file.
+    - aligner:      The aligner used to generate the MAF file. Currently, only "cactus" is supported.
+    - threshold:    Threshold for the frequency of conserved nucleotides.
+    - output_rbh2:  Output filename for the RBH2 file.
 
     Packages used:
         - Bio.AlignIO
@@ -139,12 +186,18 @@ def process_alignments(maf_file, species_list, threshold, output_bed):
                     sequences.append(str(record.seq).upper())
                     records.append(record.id)
                     chrom_positions.append(record.annotations['start'])
-
-                    first_period_idx = record.id.find('.')
-                    if first_period_idx != -1:
-                        chrom_part = record.id[first_period_idx + 1:]  # Extract the scaffold part
+                    # You could also use record.split(".")[1] to get the scaffold part
+                    # This format of the maf file is mostly from the CACTUS genome aligner, which sticks the sample name and the scaffold name together.
+                    # I added something in the arg parse section
+                    chrom_part = ""
+                    if aligner == "cactus":
+                        first_period_idx = record.id.find('.')
+                        if first_period_idx != -1:
+                            chrom_part = record.id[first_period_idx + 1:]  # Extract the scaffold part
+                        else:
+                            chrom_part = "unknown"  #  if no period is found. Later, this should be "safe" and should raise an error if this isn't in the genome fasta file.
                     else:
-                        chrom_part = "unknown"  #  if no period is found
+                        raise ValueError(f"Aligner '{aligner}' is not supported. Only 'cactus' is supported.")
                     chroms.append(chrom_part)
 
                     strand = record.annotations['strand']
@@ -155,6 +208,7 @@ def process_alignments(maf_file, species_list, threshold, output_bed):
                     strands.append(strand)
         aln_counter += 1
         if not sequences:
+            # in the case we didn't find any of the desired species
             continue
 
         matching_indices = NtCounter(sequences, threshold)
@@ -165,7 +219,7 @@ def process_alignments(maf_file, species_list, threshold, output_bed):
             rbh2_entry = {}
             rbh2_entry[f"rbh"] = f"block_{ali_block_counter}"
             rbh2_entry[f"gene_group"] = "not_assigned_yet"
-            rbh2_entry[f"color"] = '#%02X%02X%02X' % (r(),r(),r())
+            rbh2_entry[f"color"] = "" # just leave color blank for now, since we don't know what the color will/should be
             for i, record_id in enumerate(records):
                 genomic_start = chrom_positions[i] + start_index
                 genomic_end   = chrom_positions[i] + end_index

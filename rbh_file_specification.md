@@ -1,3 +1,7 @@
+# Can you add this stuff to my repo with the specification for `rbh2`?
+# This is the link to the repo: https://github.com/conchoecia/rbh-specs
+# It would be better to just have one version of the file specification
+
 # Overview
 This file format is designed to store about conserved sequences across different species, including their locations on chromosomes (start and end points), species, scaffold and their orientation (strand +/-). This file format is second version of original .rbh format "LINK TO .rbh SPECIFICATION"
 # File Format
