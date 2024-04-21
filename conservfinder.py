@@ -41,7 +41,7 @@ def get_args():
     parser.add_argument('-f', '--file',      required=True,               help="Path to the MAF file")
     parser.add_argument('-t', '--threshold', type=float, default=0.6,     help="Threshold for freq. of conserved nts")
     parser.add_argument('-s', '--species',   nargs='+',                   help="List of species to include")
-    parser.add_argument('-o', '--output',    default='output.bed',        help="Output filename for the BED file")
+    parser.add_argument('-o', '--output',    default='output.rbh2',        help="Output filename for the rbh2 file")
     parser.add_argument('-a', '--aligner',   type=str, default="cactus",  help="Tells the program which aligner was used to generate the MAF file. Default is 'cactus'. No other options are currently supported")
     args = parser.parse_args()
     # Check if the aligner is supported
@@ -106,7 +106,7 @@ def indices_to_ranges(matching_indices, min_match_len = 5):
 
     Returns:
       - List of tuples representing start and end indices of conserved regions.
-        Because these are indices for the sequence positions, we must change them later for bed format.
+        Because these are indices for the sequence positions, we must change them later for rbh2 format.
     """
     range_indices = []
     if not matching_indices:  # Check if the list is empty
@@ -123,10 +123,9 @@ def indices_to_ranges(matching_indices, min_match_len = 5):
                 start = end = index
     return range_indices
 
-#def ranges_to_coordinates(range_indices, sequences, records, Chrom_Position, ali_block_counter):
-# delete sequences, as this isn't used anymore in the function
-# why isn't this function used in the program? I can't find it elsewhere in the code
-def ranges_to_coordinates(range_indices, records, Chrom_Position, ali_block_counter):
+# This line: "rbh2_entry[f"{record_id}_scaf"]   = chroms[i]" does the job of this function.
+# We should decide whether we want to keep this function or not.
+#def ranges_to_coordinates(range_indices, records, Chrom_Position, ali_block_counter):
     """
     Converts ranges of conserved sequences into genomic coordinates and prints them.
     Each alignment comes from a unique scaffold and position from the source genomes.
@@ -148,11 +147,9 @@ def ranges_to_coordinates(range_indices, records, Chrom_Position, ali_block_coun
                              This is used to give a unique identifier to each conserved region.
 
     Notes:
-      - For .bed format score of sequence is 0 by defauld and strand is unidentified (.).
+      - For .rbh2 format score of sequence is 0 by defauld and strand is unidentified (.).
     """
     for start, end in range_indices:
-        # you can delete this line below - you don't use this sequence anymore in this function.
-        #conserved_sequence = sequences[0][start:end+1]
         for i, record_id in enumerate(records):
             genomic_start = Chrom_Position[i] + start + 1
             genomic_end = Chrom_Position[i] + end + 1
@@ -186,9 +183,6 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
                     sequences.append(str(record.seq).upper())
                     records.append(record.id)
                     chrom_positions.append(record.annotations['start'])
-                    # You could also use record.split(".")[1] to get the scaffold part
-                    # This format of the maf file is mostly from the CACTUS genome aligner, which sticks the sample name and the scaffold name together.
-                    # I added something in the arg parse section
                     chrom_part = ""
                     if aligner == "cactus":
                         first_period_idx = record.id.find('.')
@@ -247,7 +241,7 @@ def main():
     include_species = args.species
     output_filename = args.output
 
-    process_alignments(maf_file, include_species, Bp_Threshold, output_filename)
+    process_alignments(maf_file, include_species, "cactus", Bp_Threshold, output_filename)
 
 if __name__ == '__main__':
     main()
