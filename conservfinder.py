@@ -212,12 +212,13 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
             r = lambda: random.randint(0,255) # This is here for random color generation
             rbh2_entry = {}
             rbh2_entry[f"rbh"] = f"block_{ali_block_counter}"
-            rbh2_entry[f"gene_group"] = "not_assigned_yet"
+            rbh2_entry[f"gene_group"] = ""
             rbh2_entry[f"color"] = "" # just leave color blank for now, since we don't know what the color will/should be
             for i, record_id in enumerate(records):
                 genomic_start = chrom_positions[i] + start_index
                 genomic_end   = chrom_positions[i] + end_index
                 rbh2_entry[f"{record_id}_scaf"]   = chroms[i]
+                rbh2_entry[f"{record_id}_gene"] = ""
                 rbh2_entry[f"{record_id}_strand"] = strands[i]
                 rbh2_entry[f"{record_id}_start"]  = genomic_start # make sure this is in bed format, note here whether it is or not
                 rbh2_entry[f"{record_id}_stop"]   = genomic_end   # make sure this is in bed format, note here whether it is or not
