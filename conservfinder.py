@@ -89,7 +89,7 @@ def NtCounter(sequences, threshold):
                 break
     return conserved_indices
 
-def indices_to_ranges(matching_indices, min_match_len = 5):
+def indices_to_ranges(matching_indices, min_match_len = 10): # Note: it was changed from 5 to 10
     """
     Converts a list of indices to a list of start and end ranges.
 
@@ -213,7 +213,7 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
             rbh2_entry = {}
             rbh2_entry[f"rbh"] = f"block_{ali_block_counter}"
             rbh2_entry[f"gene_group"] = ""
-            rbh2_entry[f"color"] = "" # just leave color blank for now, since we don't know what the color will/should be
+            rbh2_entry[f"color"] = '#%02X%02X%02X' % (r(),r(),r()) # "" # just leave color blank for now, since we don't know what the color will/should be
             for i, record_id in enumerate(records):
                 genomic_start = chrom_positions[i] + start_index
                 genomic_end   = chrom_positions[i] + end_index
