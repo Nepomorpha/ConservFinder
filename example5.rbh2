@@ -1,0 +1,12 @@
+rbh	gene_group	color	Octopusvulgaris6645.OX597823.1_scaf	Octopusvulgaris6645.OX597823.1_gene	Octopusvulgaris6645.OX597823.1_strand	Octopusvulgaris6645.OX597823.1_start	Octopusvulgaris6645.OX597823.1_stop	Octopusbimaculoides37653.NC_068990.1_scaf	Octopusbimaculoides37653.NC_068990.1_gene	Octopusbimaculoides37653.NC_068990.1_strand	Octopusbimaculoides37653.NC_068990.1_start	Octopusbimaculoides37653.NC_068990.1_stop	Octopussinensis2607531.NC_043005.1_scaf	Octopussinensis2607531.NC_043005.1_gene	Octopussinensis2607531.NC_043005.1_strand	Octopussinensis2607531.NC_043005.1_start	Octopussinensis2607531.NC_043005.1_stop	Octopusvulgaris6645.OX111111.1_scaf	Octopusvulgaris6645.OX111111.1_gene	Octopusvulgaris6645.OX111111.1_strand	Octopusvulgaris6645.OX111111.1_start	Octopusvulgaris6645.OX111111.1_stop	Octopussinensis2607531.NC_111111.1_scaf	Octopussinensis2607531.NC_111111.1_gene	Octopussinensis2607531.NC_111111.1_strand	Octopussinensis2607531.NC_111111.1_start	Octopussinensis2607531.NC_111111.1_stop	Octopusbimaculoides37653.NC_111111.1_scaf	Octopusbimaculoides37653.NC_111111.1_gene	Octopusbimaculoides37653.NC_111111.1_strand	Octopusbimaculoides37653.NC_111111.1_start	Octopusbimaculoides37653.NC_111111.1_stop
+block_1		#5654CC	OX597823		+	18713	18727	NC_068990		+	78190150	78190164	NC_043005		+	839656	839670				0	0				0	0				0	0
+block_2		#06AA3B	OX597823		+	18729	18745	NC_068990		+	78190166	78190182	NC_043005		+	839672	839688				0	0				0	0				0	0
+block_3		#546C28	OX597823		+	18747	18762	NC_068990		+	78190184	78190199	NC_043005		+	839690	839705				0	0				0	0				0	0
+block_4		#61959B	OX597823		+	18823	18861	NC_068990		+	78190260	78190298	NC_043005		+	839766	839804				0	0				0	0				0	0
+block_5		#D8790A	OX597823		+	18865	18878	NC_068990		+	78190302	78190315	NC_043005		+	839808	839821				0	0				0	0				0	0
+block_6		#24F87E	OX597823		+	19368	19419				0	0	NC_043005		+	846391	846442				0	0				0	0				0	0
+block_7		#CFD0FC	OX597823		+	19421	19494				0	0	NC_043005		+	846444	846517				0	0				0	0				0	0
+block_8		#F671EB	OX597823		+	19496	19992				0	0	NC_043005		+	846519	847015				0	0				0	0				0	0
+block_9		#536BC5				0	0				0	0				0	0	OX111111		+	19368	19419	NC_111111		+	846391	846442	NC_111111		+	846391	846442
+block_10		#D29720				0	0				0	0				0	0	OX111111		+	19421	19494	NC_111111		+	846444	846517	NC_111111		+	846444	846517
+block_11		#FC7CF3				0	0				0	0				0	0	OX111111		+	19496	19992	NC_111111		+	846519	847015	NC_111111		+	846519	847015

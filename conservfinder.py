@@ -170,70 +170,56 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
         - Bio.AlignIO
         - pandas
     """
+    if aligner != "cactus":
+        raise ValueError("Aligner not supported. Only 'cactus' is supported.")
+    r = lambda: random.randint(0,255)
     ali_block_counter = 1
     rbh2_entries = []
-    aln_counter = 1
-    total_conserved_regions = 0
+
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
         sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
-
         for record in multiple_alignment:
-            for species in species_list:
-                if species in record.id:
-                    sequences.append(str(record.seq).upper())
-                    records.append(record.id)
-                    chrom_positions.append(record.annotations['start'])
-                    chrom_part = ""
-                    if aligner == "cactus":
-                        first_period_idx = record.id.find('.')
-                        if first_period_idx != -1:
-                            chrom_part = record.id[first_period_idx + 1:]  # Extract the scaffold part
-                        else:
-                            chrom_part = "unknown"  #  if no period is found. Later, this should be "safe" and should raise an error if this isn't in the genome fasta file.
-                    else:
-                        raise ValueError(f"Aligner '{aligner}' is not supported. Only 'cactus' is supported.")
-                    chroms.append(chrom_part)
+            if any(base_species in record.id for base_species in species_list):
+                sequences.append(str(record.seq).upper())
+                records.append(record.id)
+                chrom_positions.append(record.annotations['start'])
+                chroms.append(record.id.split('.')[1] if '.' in record.id else "unknown")
+                strand = '-' if record.annotations['strand'] == -1 else '+'
+                strands.append(strand)
 
-                    strand = record.annotations['strand']
-                    if strand == -1:
-                        strand = '-'
-                    elif strand == 1:
-                        strand = '+'
-                    strands.append(strand)
-        aln_counter += 1
-        if not sequences:
-            # in the case we didn't find any of the desired species
-            continue
+        if sequences:
+            matching_indices = NtCounter(sequences, threshold)
+            range_indices = indices_to_ranges(matching_indices)
+            for start_index, end_index in range_indices:
+                rbh2_entry = {
+                    "rbh": f"block_{ali_block_counter}",
+                    "gene_group": "",
+                    "color": '#%02X%02X%02X' % (r(), r(), r())
+                }
+                for i, record_id in enumerate(records):
+                    genomic_start = int(chrom_positions[i] + start_index)
+                    genomic_end = int(chrom_positions[i] + end_index)
+                    rbh2_entry.update({
+                        f"{record_id}_scaf": chroms[i],
+                        f"{record_id}_gene": "",
+                        f"{record_id}_strand": strands[i],
+                        f"{record_id}_start": genomic_start,
+                        f"{record_id}_stop": genomic_end
+                    })
+                rbh2_entries.append(rbh2_entry)
+                ali_block_counter += 1
 
-        matching_indices = NtCounter(sequences, threshold)
-        range_indices = indices_to_ranges(matching_indices)
-
-        for start_index, end_index in range_indices:
-            r = lambda: random.randint(0,255) # This is here for random color generation
-            rbh2_entry = {}
-            rbh2_entry[f"rbh"] = f"block_{ali_block_counter}"
-            rbh2_entry[f"gene_group"] = ""
-            rbh2_entry[f"color"] = '#%02X%02X%02X' % (r(),r(),r()) # "" # just leave color blank for now, since we don't know what the color will/should be
-            for i, record_id in enumerate(records):
-                genomic_start = chrom_positions[i] + start_index
-                genomic_end   = chrom_positions[i] + end_index
-                rbh2_entry[f"{record_id}_scaf"]   = chroms[i]
-                rbh2_entry[f"{record_id}_gene"] = ""
-                rbh2_entry[f"{record_id}_strand"] = strands[i]
-                rbh2_entry[f"{record_id}_start"]  = genomic_start # make sure this is in bed format, note here whether it is or not
-                rbh2_entry[f"{record_id}_stop"]   = genomic_end   # make sure this is in bed format, note here whether it is or not
-            rbh2_entries.append(rbh2_entry)
-            ali_block_counter += 1
-            total_conserved_regions += len(range_indices)
-
-    bed_output = output_bed if output_bed.endswith('.bed') else f"{output_bed}.bed"
-    rbh2_output = bed_output.replace('.bed', '.rbh2')
-    if rbh2_output.endswith('.rbh2'):
-        rbh2_output = rbh2_output.replace('.rbh2', '')
-    if not rbh2_output.endswith('.rbh2'):
-        rbh2_output += '.rbh2'
     df = pd.DataFrame(rbh2_entries)
-    df.to_csv(rbh2_output, sep="\t", index=False)
+    df = df.fillna(0).astype({col: int for col in df.columns if 'start' in col or 'stop' in col})
+    output_path = f"{output_bed}.rbh2" if not output_bed.endswith('.rbh2') else output_bed
+    df.to_csv(output_path, sep="\t", index=False)
+
+    df = pd.DataFrame(rbh2_entries)
+    int_columns = [col for col in df.columns if 'start' in col or 'stop' in col]
+    df[int_columns] = df[int_columns].fillna(0).astype(int)
+
+    output_path = f"{output_bed}.rbh2" if not output_bed.endswith('.rbh2') else output_bed
+    df.to_csv(output_path, sep="\t", index=False)
 
 def main():
     args = get_args()
