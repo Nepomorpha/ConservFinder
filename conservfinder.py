@@ -172,18 +172,23 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     """
     if aligner != "cactus":
         raise ValueError("Aligner not supported. Only 'cactus' is supported.")
-    r = lambda: random.randint(0,255)
+
+    r = lambda: random.randint(0,255)  # For random color generation
     ali_block_counter = 1
     rbh2_entries = []
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
         sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
         for record in multiple_alignment:
-            if any(base_species in record.id for base_species in species_list):
+            record_base = record.id.split('.')[0]
+            if any(base_species == record_base for base_species in species_list):
+                full_identifier = record.id
                 sequences.append(str(record.seq).upper())
-                records.append(record.id)
+                records.append(full_identifier)
                 chrom_positions.append(record.annotations['start'])
-                chroms.append(record.id.split('.')[1] if '.' in record.id else "unknown")
+                chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
+                chroms.append(chrom_part)
+
                 strand = '-' if record.annotations['strand'] == -1 else '+'
                 strands.append(strand)
 
@@ -211,13 +216,6 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
 
     df = pd.DataFrame(rbh2_entries)
     df = df.fillna(0).astype({col: int for col in df.columns if 'start' in col or 'stop' in col})
-    output_path = f"{output_bed}.rbh2" if not output_bed.endswith('.rbh2') else output_bed
-    df.to_csv(output_path, sep="\t", index=False)
-
-    df = pd.DataFrame(rbh2_entries)
-    int_columns = [col for col in df.columns if 'start' in col or 'stop' in col]
-    df[int_columns] = df[int_columns].fillna(0).astype(int)
-
     output_path = f"{output_bed}.rbh2" if not output_bed.endswith('.rbh2') else output_bed
     df.to_csv(output_path, sep="\t", index=False)
 
