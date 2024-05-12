@@ -178,19 +178,36 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     rbh2_entries = []
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-        sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
-        for record in multiple_alignment:
-            record_base = record.id.split('.')[0]
-            if any(base_species == record_base for base_species in species_list):
-                full_identifier = record.id
-                sequences.append(str(record.seq).upper())
-                records.append(full_identifier)
-                chrom_positions.append(record.annotations['start'])
-                chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
-                chroms.append(chrom_part)
+        multiple_alignment_list = list(multiple_alignment) # we need that to filter out species
+        species_in_alignment = set()
+        filtered_records = []
+        for record in multiple_alignment_list:
+            species_identifier = record.id.split('.')[0]
+            match_found = False
+            for spec in species_list:
+                if species_identifier.startswith(spec):
+                    match_found = True
+                    species_in_alignment.add(species_identifier)
+                    break
+            if match_found:
+                filtered_records.append(record)
 
-                strand = '-' if record.annotations['strand'] == -1 else '+'
-                strands.append(strand)
+
+        if len(filtered_records) != len(species_in_alignment):
+            print(f"In the alignment {ali_block_counter} there were more than one record for the same species. Skipping alignment.")
+            ali_block_counter += 1  # Important bc alignment should be counted even on skip
+            continue #
+
+        sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
+        for record in filtered_records:
+            full_identifier = record.id
+            sequences.append(str(record.seq).upper())
+            records.append(full_identifier)
+            chrom_positions.append(record.annotations['start'])
+            chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
+            chroms.append(chrom_part)
+            strand = '-' if record.annotations['strand'] == -1 else '+'
+            strands.append(strand)
 
         if sequences:
             matching_indices = NtCounter(sequences, threshold)
