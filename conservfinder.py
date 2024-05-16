@@ -178,58 +178,51 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     rbh2_entries = []
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
-        multiple_alignment_list = list(multiple_alignment) # we need that to filter out species
-        species_in_alignment = set()
         filtered_records = []
-        for record in multiple_alignment_list:
+        species_in_alignment = []
+        for record in multiple_alignment:
             species_identifier = record.id.split('.')[0]
-            match_found = False
-            for spec in species_list:
-                if species_identifier.startswith(spec):
-                    match_found = True
-                    species_in_alignment.add(species_identifier)
-                    break
-            if match_found:
+            if species_identifier in species_list:
+                species_in_alignment.append(species_identifier)
                 filtered_records.append(record)
+                continue
+        if len(species_in_alignment) == len(set(species_in_alignment)):
 
+            sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
+            for record in filtered_records:
+                full_identifier = record.id
+                sequences.append(str(record.seq).upper())
+                records.append(full_identifier)
+                chrom_positions.append(record.annotations['start'])
+                chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
+                chroms.append(chrom_part)
+                strand = '-' if record.annotations['strand'] == -1 else '+'
+                strands.append(strand)
 
-        if len(filtered_records) != len(species_in_alignment):
+            if sequences:
+                matching_indices = NtCounter(sequences, threshold)
+                range_indices = indices_to_ranges(matching_indices)
+                for start_index, end_index in range_indices:
+                    rbh2_entry = {
+                        "rbh": f"block_{ali_block_counter}",
+                        "gene_group": "",
+                        "color": "" #'#%02X%02X%02X' % (r(), r(), r())
+                    }
+                    for i, record_id in enumerate(records):
+                        genomic_start = int(chrom_positions[i] + start_index)
+                        genomic_end = int(chrom_positions[i] + end_index)
+                        rbh2_entry.update({
+                            f"{record_id}_scaf": chroms[i],
+                            f"{record_id}_gene": "",
+                            f"{record_id}_strand": strands[i],
+                            f"{record_id}_start": genomic_start,
+                            f"{record_id}_stop": genomic_end
+                        })
+                    rbh2_entries.append(rbh2_entry)
+                    ali_block_counter += 1
+        else:
             print(f"In the alignment {ali_block_counter} there were more than one record for the same species. Skipping alignment.")
             ali_block_counter += 1  # Important bc alignment should be counted even on skip
-            continue #
-
-        sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
-        for record in filtered_records:
-            full_identifier = record.id
-            sequences.append(str(record.seq).upper())
-            records.append(full_identifier)
-            chrom_positions.append(record.annotations['start'])
-            chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
-            chroms.append(chrom_part)
-            strand = '-' if record.annotations['strand'] == -1 else '+'
-            strands.append(strand)
-
-        if sequences:
-            matching_indices = NtCounter(sequences, threshold)
-            range_indices = indices_to_ranges(matching_indices)
-            for start_index, end_index in range_indices:
-                rbh2_entry = {
-                    "rbh": f"block_{ali_block_counter}",
-                    "gene_group": "",
-                    "color": '#%02X%02X%02X' % (r(), r(), r())
-                }
-                for i, record_id in enumerate(records):
-                    genomic_start = int(chrom_positions[i] + start_index)
-                    genomic_end = int(chrom_positions[i] + end_index)
-                    rbh2_entry.update({
-                        f"{record_id}_scaf": chroms[i],
-                        f"{record_id}_gene": "",
-                        f"{record_id}_strand": strands[i],
-                        f"{record_id}_start": genomic_start,
-                        f"{record_id}_stop": genomic_end
-                    })
-                rbh2_entries.append(rbh2_entry)
-                ali_block_counter += 1
 
     df = pd.DataFrame(rbh2_entries)
     df = df.fillna(0).astype({col: int for col in df.columns if 'start' in col or 'stop' in col})

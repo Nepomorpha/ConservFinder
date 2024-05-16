@@ -1,0 +1,21 @@
+rbh	gene_group	color	sequence1_scaf	sequence1_gene	sequence1_strand	sequence1_start	sequence1_stop	sequence2_scaf	sequence2_gene	sequence2_strand	sequence2_start	sequence2_stop	sequence3_scaf	sequence3_gene	sequence3_strand	sequence3_start	sequence3_stop
+block_1			sequence1		+	10	22	sequence2		+	10	22	sequence3		+	10	22
+block_2			sequence1		+	57	70	sequence2		+	57	70	sequence3		+	57	70
+block_3			sequence1		+	79	91	sequence2		+	79	91	sequence3		+	79	91
+block_4			sequence1		+	119	132	sequence2		+	119	132	sequence3		+	119	132
+block_5			sequence1		+	138	152	sequence2		+	138	152	sequence3		+	138	152
+block_6			sequence1		+	175	187	sequence2		+	175	187	sequence3		+	175	187
+block_7			sequence1		+	194	208	sequence2		+	194	208	sequence3		+	194	208
+block_8			sequence1		+	237	247	sequence2		+	237	247	sequence3		+	237	247
+block_9			sequence1		+	255	265	sequence2		+	255	265	sequence3		+	255	265
+block_10			sequence1		+	290	303	sequence2		+	290	303	sequence3		+	290	303
+block_11			sequence1		+	310	320	sequence2		+	310	320	sequence3		+	310	320
+block_12			sequence1		+	348	359	sequence2		+	348	359	sequence3		+	348	359
+block_13			sequence1		+	368	379	sequence2		+	368	379	sequence3		+	368	379
+block_14			sequence1		+	404	415	sequence2		+	404	415	sequence3		+	404	415
+block_15			sequence1		+	421	434	sequence2		+	421	434	sequence3		+	421	434
+block_16			sequence1		+	465	479	sequence2		+	465	479	sequence3		+	465	479
+block_17			sequence1		+	485	499	sequence2		+	485	499	sequence3		+	485	499
+block_18			sequence1		+	527	540	sequence2		+	527	540	sequence3		+	527	540
+block_19			sequence1		+	549	563	sequence2		+	549	563	sequence3		+	549	563
+block_20			sequence1		+	594	607	sequence2		+	594	607	sequence3		+	594	607
