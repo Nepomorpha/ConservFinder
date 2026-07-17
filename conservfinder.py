@@ -19,9 +19,6 @@ from collections import Counter
 from Bio import AlignIO
 import argparse
 import pandas as pd
-import random
-
-bed_intervals = [] # we need that for bed
 
 
 def get_args():
@@ -40,8 +37,9 @@ def get_args():
     parser = argparse.ArgumentParser(description="Process MAF files to find conserved regions.")
     parser.add_argument('-f', '--file',      required=True,               help="Path to the MAF file")
     parser.add_argument('-t', '--threshold', type=float, default=0.6,     help="Threshold for freq. of conserved nts")
-    parser.add_argument('-s', '--species',   nargs='+',                   help="List of species to include")
+    parser.add_argument('-s', '--species',   nargs='+', required=True,    help="List of species to include")
     parser.add_argument('-o', '--output',    default='output.rbh2',        help="Output filename for the rbh2 file")
+    parser.add_argument('-m', '--min-length', type=int, default=10,       help="Minimum length of a conserved region")
     parser.add_argument('-a', '--aligner',   type=str, default="cactus",  help="Tells the program which aligner was used to generate the MAF file. Default is 'cactus'. No other options are currently supported")
     args = parser.parse_args()
     # Check if the aligner is supported
@@ -84,7 +82,7 @@ def NtCounter(sequences, threshold):
         c = Counter(column)
         total = sum(c.values())
         for nucleotide, count in c.items():
-            if count / total >= threshold:
+            if nucleotide in "ACGT" and count / total >= threshold:
                 conserved_indices.append(sn)
                 break
     return conserved_indices
@@ -123,39 +121,43 @@ def indices_to_ranges(matching_indices, min_match_len = 10): # Note: it was chan
                 start = end = index
     return range_indices
 
-# This line: "rbh2_entry[f"{record_id}_scaf"]   = chroms[i]" does the job of this function.
-# We should decide whether we want to keep this function or not.
-#def ranges_to_coordinates(range_indices, records, Chrom_Position, ali_block_counter):
+def maf_coords(record, start, end):
     """
-    Converts ranges of conserved sequences into genomic coordinates and prints them.
+    Converts ranges of conserved sequences into genomic coordinates.
     Each alignment comes from a unique scaffold and position from the source genomes.
     Therefore, we must convert the indices of the alignment to genomic coordinates.
 
     Arguments:
-      -     range_indices: List of tuples (start, end) of conserved regions in the alignment.
-                              Coordinates are indices of the alignment.
-                              These range indices are yielded from the function indices_to_ranges.
-      # you can remove this from the function arguments, as you don't use it anymore 
-      #-         sequences: List of sequences (str) analyzed.
-      #                        These are parsed from the .maf file.
-      -           records: List of record IDs (str) corresponding to sequences.
-                             In other words, these are the fasta headers to which this sequence belongs.
-                             These are parsed from the .maf file.
-      -    Chrom_Position: List of chromosome start positions (int) for each sequence.
-                             These are parsed from the .maf file.
-      - ali_block_counter: The counter (int) of .maf alignments from the input file.
-                             This is used to give a unique identifier to each conserved region.
-
-    Notes:
-      - For .rbh2 format score of sequence is 0 by defauld and strand is unidentified (.).
+      - record: Sequence record corresponding to one species.
+                It contains the fasta header, chromosome start and strand.
+                It is parsed from the .maf file.
+      - start: Start index of the conserved region in the alignment.
+      - end: End index of the conserved region in the alignment.
     """
-    for start, end in range_indices:
-        for i, record_id in enumerate(records):
-            genomic_start = Chrom_Position[i] + start + 1
-            genomic_end = Chrom_Position[i] + end + 1
-            bed_intervals.append([record_id, genomic_start, genomic_end, f"block_{ali_block_counter}", "0", "."])
+    sequence = str(record.seq)
+    before = 0
+    for nucleotide in sequence[:start]:
+        if nucleotide != '-':
+            before += 1
 
-def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
+    length = 0
+    for nucleotide in sequence[start:end + 1]:
+        if nucleotide != '-':
+            length += 1
+
+    maf_start = record.annotations['start']
+
+    if record.annotations['strand'] == 1:
+        genomic_start = maf_start + before
+        genomic_end = genomic_start + length
+    else:
+        genomic_end = record.annotations['srcSize'] - maf_start - before
+        genomic_start = genomic_end - length
+
+    return genomic_start, genomic_end
+
+
+def process_alignments(maf_file, species_list, aligner, threshold, output_file, min_length=10):
     """
     Process the MAF file to find conserved regions and save them to an RBH2 file.
 
@@ -164,7 +166,7 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     - species_list: List of species to include in the analysis.
     - aligner:      The aligner used to generate the MAF file. Currently, only "cactus" is supported.
     - threshold:    Threshold for the frequency of conserved nucleotides.
-    - output_rbh2:  Output filename for the RBH2 file.
+    - output_file:  Output filename for the RBH2 file.
 
     Packages used:
         - Bio.AlignIO
@@ -173,61 +175,77 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_bed):
     if aligner != "cactus":
         raise ValueError("Aligner not supported. Only 'cactus' is supported.")
 
-    r = lambda: random.randint(0,255)  # For random color generation
-    ali_block_counter = 1
+    species_names = []
+    for species in species_list:
+        species_names.append(species.split('.')[0])
+    species_list = species_names
+
+    maf_count = 0
+    skip_count = 0
     rbh2_entries = []
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
+        maf_count += 1
         filtered_records = []
         species_in_alignment = []
+
         for record in multiple_alignment:
             species_identifier = record.id.split('.')[0]
             if species_identifier in species_list:
-                species_in_alignment.append(species_identifier)
                 filtered_records.append(record)
-                continue
-        if len(species_in_alignment) == len(set(species_in_alignment)):
+                species_in_alignment.append(species_identifier)
 
-            sequences, records, chrom_positions, strands, chroms = [], [], [], [], []
+        if len(filtered_records) == len(species_list) and len(species_in_alignment) == len(set(species_in_alignment)):
+            sequences = []
             for record in filtered_records:
-                full_identifier = record.id
                 sequences.append(str(record.seq).upper())
-                records.append(full_identifier)
-                chrom_positions.append(record.annotations['start'])
-                chrom_part = '.'.join(full_identifier.split('.')[1:]) if '.' in full_identifier else full_identifier
-                chroms.append(chrom_part)
-                strand = '-' if record.annotations['strand'] == -1 else '+'
-                strands.append(strand)
 
-            if sequences:
-                matching_indices = NtCounter(sequences, threshold)
-                range_indices = indices_to_ranges(matching_indices)
-                for start_index, end_index in range_indices:
-                    rbh2_entry = {
-                        "rbh": f"block_{ali_block_counter}",
-                        "gene_group": "",
-                        "color": "" #'#%02X%02X%02X' % (r(), r(), r())
-                    }
-                    for i, record_id in enumerate(records):
-                        genomic_start = int(chrom_positions[i] + start_index)
-                        genomic_end = int(chrom_positions[i] + end_index)
-                        rbh2_entry.update({
-                            f"{record_id}_scaf": chroms[i],
-                            f"{record_id}_gene": "",
-                            f"{record_id}_strand": strands[i],
-                            f"{record_id}_start": genomic_start,
-                            f"{record_id}_stop": genomic_end
-                        })
-                    rbh2_entries.append(rbh2_entry)
-                    ali_block_counter += 1
+            matching_indices = NtCounter(sequences, threshold)
+            range_indices = indices_to_ranges(matching_indices, min_length)
+
+            for start_index, end_index in range_indices:
+                block = f"block_{len(rbh2_entries) + 1}"
+                rbh2_entry = {
+                    "rbh": block,
+                    "gene_group": "",
+                    "color": ""
+                }
+
+                for record in filtered_records:
+                    species = record.id.split('.')[0]
+                    genomic_start, genomic_end = maf_coords(record, start_index, end_index)
+                    scaffold = record.id.split('.', 1)[1] if '.' in record.id else record.id
+                    strand = '-' if record.annotations['strand'] == -1 else '+'
+                    rbh2_entry.update({
+                        f"{species}_scaf": scaffold,
+                        f"{species}_gene": block,
+                        f"{species}_strand": strand,
+                        f"{species}_start": genomic_start,
+                        f"{species}_stop": genomic_end
+                    })
+
+                rbh2_entries.append(rbh2_entry)
         else:
-            print(f"In the alignment {ali_block_counter} there were more than one record for the same species. Skipping alignment.")
-            ali_block_counter += 1  # Important bc alignment should be counted even on skip
+            skip_count += 1
 
-    df = pd.DataFrame(rbh2_entries)
-    df = df.fillna(0).astype({col: int for col in df.columns if 'start' in col or 'stop' in col})
-    output_path = f"{output_bed}.rbh2" if not output_bed.endswith('.rbh2') else output_bed
+    columns = ["rbh", "gene_group", "color"]
+    for species in species_list:
+        columns.extend([
+            f"{species}_scaf",
+            f"{species}_gene",
+            f"{species}_strand",
+            f"{species}_start",
+            f"{species}_stop"
+        ])
+
+    df = pd.DataFrame(rbh2_entries, columns=columns)
+    output_path = f"{output_file}.rbh2" if not output_file.endswith('.rbh2') else output_file
     df.to_csv(output_path, sep="\t", index=False)
+
+    print(f"MAF blocks: {maf_count}")
+    print(f"Skipped blocks: {skip_count}")
+    print(f"Conserved regions: {len(rbh2_entries)}")
+    print(f"Output: {output_path}")
 
 def main():
     args = get_args()
@@ -236,7 +254,7 @@ def main():
     include_species = args.species
     output_filename = args.output
 
-    process_alignments(maf_file, include_species, "cactus", Bp_Threshold, output_filename)
+    process_alignments(maf_file, include_species, args.aligner, Bp_Threshold, output_filename, args.min_length)
 
 if __name__ == '__main__':
     main()
