@@ -159,7 +159,7 @@ def maf_coords(record, start, end):
 
 def process_alignments(maf_file, species_list, aligner, threshold, output_file, min_length=10):
     """
-    Process the MAF file to find conserved regions and save them to an RBH2 file.
+    Process the MAF file to find conserved regions and save them to RBH2 and BED files.
 
     Arguments:
     - maf_file:     Path to the MAF file.
@@ -242,10 +242,22 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_file, 
     output_path = f"{output_file}.rbh2" if not output_file.endswith('.rbh2') else output_file
     df.to_csv(output_path, sep="\t", index=False)
 
+    reference = species_list[0]
+    bed_path = output_path.replace('.rbh2', '.bed')
+    bed_columns = [
+        f"{reference}_scaf",
+        f"{reference}_start",
+        f"{reference}_stop",
+        "rbh"
+    ]
+    bed = df[bed_columns]
+    bed.to_csv(bed_path, sep="\t", index=False, header=False)
+
     print(f"MAF blocks: {maf_count}")
     print(f"Skipped blocks: {skip_count}")
     print(f"Conserved regions: {len(rbh2_entries)}")
     print(f"Output: {output_path}")
+    print(f"Track: {bed_path}")
 
 def main():
     args = get_args()
