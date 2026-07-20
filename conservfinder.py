@@ -75,17 +75,22 @@ def NtCounter(sequences, threshold):
 
     The output is:
       - conserved_indices: a list of integers, the indices of the conserved nucleotides
+      - scores: agreement score for each alignment column
     """
     conserved_indices = []
+    scores = []
     for sn in range(len(sequences[0])):
         column = ''.join(seq[sn] for seq in sequences)
         c = Counter(column)
         total = sum(c.values())
+        score = 0
         for nucleotide, count in c.items():
-            if nucleotide in "ACGT" and count / total >= threshold:
-                conserved_indices.append(sn)
-                break
-    return conserved_indices
+            if nucleotide in "ACGT" and count / total > score:
+                score = count / total
+        scores.append(score)
+        if score >= threshold:
+            conserved_indices.append(sn)
+    return conserved_indices, scores
 
 def indices_to_ranges(matching_indices, min_match_len = 10): # Note: it was changed from 5 to 10
     """
@@ -183,25 +188,42 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_file, 
     maf_count = 0
     skip_count = 0
     rbh2_entries = []
+    score_entries = []
 
     for multiple_alignment in AlignIO.parse(maf_file, "maf"):
         maf_count += 1
         filtered_records = []
         species_in_alignment = []
+        reference_record = None
 
         for record in multiple_alignment:
             species_identifier = record.id.split('.')[0]
             if species_identifier in species_list:
                 filtered_records.append(record)
                 species_in_alignment.append(species_identifier)
+                if species_identifier == species_list[0]:
+                    reference_record = record
 
         if len(filtered_records) == len(species_list) and len(species_in_alignment) == len(set(species_in_alignment)):
             sequences = []
             for record in filtered_records:
                 sequences.append(str(record.seq).upper())
 
-            matching_indices = NtCounter(sequences, threshold)
+            matching_indices, scores = NtCounter(sequences, threshold)
             range_indices = indices_to_ranges(matching_indices, min_length)
+
+            scaffold = reference_record.id.split('.', 1)[1]
+            position = reference_record.annotations['start']
+            step = 1
+
+            if reference_record.annotations['strand'] == -1:
+                position = reference_record.annotations['srcSize'] - position - 1
+                step = -1
+
+            for sn in range(len(scores)):
+                if reference_record.seq[sn] != '-':
+                    score_entries.append([scaffold, position, position + 1, scores[sn]])
+                    position += step
 
             for start_index, end_index in range_indices:
                 block = f"block_{len(rbh2_entries) + 1}"
@@ -253,11 +275,20 @@ def process_alignments(maf_file, species_list, aligner, threshold, output_file, 
     bed = df[bed_columns]
     bed.to_csv(bed_path, sep="\t", index=False, header=False)
 
+    score_path = output_path.replace('.rbh2', '.bedgraph')
+    score_df = pd.DataFrame(
+        score_entries,
+        columns=["scaffold", "start", "stop", "score"]
+    )
+    score_df = score_df.sort_values(["scaffold", "start"])
+    score_df.to_csv(score_path, sep="\t", index=False, header=False)
+
     print(f"MAF blocks: {maf_count}")
     print(f"Skipped blocks: {skip_count}")
     print(f"Conserved regions: {len(rbh2_entries)}")
     print(f"Output: {output_path}")
     print(f"Track: {bed_path}")
+    print(f"Scores: {score_path}")
 
 def main():
     args = get_args()

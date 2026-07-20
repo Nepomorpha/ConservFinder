@@ -3,7 +3,7 @@ The ConservFinder is a script designed to identify conserved sequences of a cert
 
 ## Features
 **Input**: MAF file, names of species of interest, threshold.
-**Output**: Number of alignment blocks, number of conserved sequences, .rbh2 and .bed files.
+**Output**: Number of alignment blocks, number of conserved sequences, .rbh2, .bed and .bedgraph files.
 
 **Used packages**:
 - collections.Counter: For counting nucleotide occurrences.
@@ -29,7 +29,7 @@ Run the script with the following commands:
 - the minimum conserved sequence length (-m). The default is 10.
 
 Species can be given as `Species` or `Species.scaffold`.
-The first species is used for the .bed track.
+The first species is used for the .bed and .bedgraph tracks.
 
 Example:
 ```python
@@ -45,5 +45,5 @@ pip install -r requirements.txt
 
 Plot a region with `pyGenomeTracks`:
 ```bash
-./plot_maf.sh alignment.maf conserved_regions.bed ReferenceSpecies scaffold:start-end "Species2 Species3" "name2 name3" plot.png
+./plot_maf.sh alignment.maf conserved_regions.bed conserved_regions.bedgraph ReferenceSpecies scaffold:start-end "Species2 Species3" "name2 name3" plot.png
 ```

@@ -1,24 +1,34 @@
 #!/bin/sh
 
 # Use:
-# plot_maf.sh MAF BED REF REGION "SPECIES" "LABELS" OUTPUT
-# - BED is made by ConservFinder.
+# plot_maf.sh MAF BED BEDGRAPH REF REGION "SPECIES" "LABELS" OUTPUT
+# - BED and BEDGRAPH are made by ConservFinder.
 # - REF is the first -s species.
 # - REGION is scaffold:start-end.
 # - SPECIES and LABELS stay in quotes.
 
 maf=$1
 bed=$2
-reference=$3
-region=$4
-species=$5
-labels=$6
-output=$7
+score=$3
+reference=$4
+region=$5
+species=$6
+labels=$7
+output=$8
 
 tracks="${output}.ini"
 index="${output}.index"
 
-printf '[conserved]\n' > "$tracks"
+printf '[agreement]\n' > "$tracks"
+printf 'file = %s\n' "$score" >> "$tracks"
+printf 'file_type = bedgraph\n' >> "$tracks"
+printf 'title = Agreement\n' >> "$tracks"
+printf 'height = 2\n' >> "$tracks"
+printf 'color = #55599b\n' >> "$tracks"
+printf 'min_value = 0\n' >> "$tracks"
+printf 'max_value = 1\n\n' >> "$tracks"
+
+printf '[conserved]\n' >> "$tracks"
 printf 'file = %s\n' "$bed" >> "$tracks"
 printf 'file_type = bed\n' >> "$tracks"
 printf 'title = ConservFinder\n' >> "$tracks"
